@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DoMiSol Field Control — App Vendedor V14</title>
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="appToast" class="toast"></div>
+
+<div id="login" class="loginWrap"><div class="loginCard"><div class="loginHero"><div class="mark">DM</div><h1>DoMiSol Field Control</h1><p>Demo de la aplicación del vendedor usando un asesor real del listado: David Sac Patzan, Punto Roosevelt.</p><div class="sidebox"><b>Acceso demo</b><p>Usuario: demo<br>Password: demo</p></div></div><div class="loginForm"><h2 style="margin:0 0 6px">Ingreso vendedor</h2><p style="color:var(--muted);margin-top:0">Al entrar se muestra la jornada demo del asesor asignado y su ruta del día.</p><div class="demoHint"><b>Usuario:</b> demo<br><b>Password:</b> demo</div><div class="field"><label>Usuario</label><input id="u" value="demo" autocomplete="username"></div><div class="field"><label>Password</label><input id="p" type="password" value="demo" autocomplete="current-password"></div><button class="btn gold" style="width:100%;font-size:15px" onclick="loginApp()">Entrar a jornada</button><p id="loginError" style="color:var(--red);font-weight:700;display:none">Credenciales incorrectas.</p></div></div></div>
+
+<div id="shell" class="app hide">
+    <header class="mobileAppHeader"><div class="brandCompact"><div class="mark">DM</div><div><b>Field Control</b><small>David Sac Patzan · Punto Roosevelt</small></div></div><span class="status ok">GPS ACTIVO</span></header>
+    <main class="main">
+        <div class="topbar"><div class="title"><h2 id="pageTitle">Mi jornada</h2><p id="pageSub">Seguimiento activo del teléfono corporativo</p></div><div class="actions"><span class="pill">GPS activo</span><span class="pill">Última sync: <b id="syncText">hace 12 seg</b></span><button class="btn ghost" onclick="logoutApp()">Salir demo</button></div></div>
+
+        <section id="inicio" class="section active"><div class="cards grid"><div class="card metric"><span>Estado</span><strong style="font-size:25px">En ruta</strong><em>Jornada activa</em></div><div class="card metric"><span>Ruta del día</span><strong style="font-size:25px" id="routeStatus">Creada</strong><em>4 paradas</em></div><div class="card metric"><span>Cumplimiento</span><strong id="comp">72%</strong><em>Dentro de corredor</em></div><div class="card metric"><span>Batería</span><strong id="bat">74%</strong><em>Equipo estable</em></div></div><div class="layout"><div class="card mapcard"><div class="mapTop"><div><h3 style="margin:0">Mapa de jornada</h3><small style="color:var(--muted)">Guatemala · ubicación simulada</small></div><span class="status ok">EN RUTA</span></div><div id="homeMap" class="mapCanvas"></div></div><div class="card"><div class="cardhead"><h3>Qué hace el vendedor</h3><span class="status ok">Visible</span></div><div class="notice">El vendedor inicia sesión, crea o confirma su ruta del día, realiza check-ins y mantiene el teléfono corporativo activo. No tiene enlace al dashboard de supervisor y no existe botón de pausa.</div><br><div class="infoGrid"><div class="info"><span>Vendedor</span><b>David Sac Patzan</b></div><div class="info"><span>Sucursal</span><b>DoMiSol Punto Roosevelt</b></div><div class="info"><span>Ruta</span><b>Ruta Capital Oeste</b></div><div class="info"><span>Supervisor</span><b>Antonio Barrios</b></div><div class="info"><span>Tel. tienda</span><b>23288314</b></div><div class="info"><span>Reporta cada</span><b>3 min</b></div><div class="info"><span>Tráfico</span><b>Monitoreado</b></div></div></div></div></section>
+
+        <section id="ruta" class="section"><div class="layout2"><div class="card"><div class="cardhead"><h3>Crear ruta del día</h3><span class="status warn">Editable antes de iniciar</span></div><div class="field"><label>Destino / cliente</label><input id="destName" placeholder="Ej. Cliente zona 11" value="Cliente mayorista Majadas"></div><div class="field"><label>Dirección o referencia</label><input id="destAddress" placeholder="Ej. Calzada Punto Roosevelt, Zona 11" value="Majadas, zona 11"></div><div class="field"><label>Motivo de visita</label><select id="destType"><option>Venta / seguimiento</option><option>Cobro</option><option>Entrega</option><option>Prospecto</option><option>Mayoreo</option></select></div><div class="field"><label>Comentario</label><textarea id="destNote">Solicita cotización de audio profesional y micrófonos.</textarea></div><button class="btn gold" onclick="addStop()">Agregar parada a ruta</button> <button class="btn ghost" onclick="submitRoute()">Enviar ruta al supervisor</button><br><br><div class="notice">En producción el sistema puede pedir aprobación del supervisor o quedar como ruta propuesta. El supervisor compara esta ruta contra la ubicación real del teléfono.</div></div><div class="card"><div class="cardhead"><h3>Ruta planificada</h3><span id="sentBadge" class="status warn">Pendiente de enviar</span></div><div id="stopList"></div><div class="infoGrid"><div class="info"><span>ETA sin tráfico</span><b>1h 35m</b></div><div class="info"><span>ETA con tráfico</span><b id="trafficEta">2h 05m</b></div><div class="info"><span>Ventana tolerancia</span><b>+25 min</b></div><div class="info"><span>Validación</span><b>Ruta activa</b></div></div></div></div></section>
+
+        <section id="mapa" class="section"><div class="layout"><div class="card mapcard"><div class="mapTop"><div><h3 style="margin:0">Ruta y ubicación actual</h3><small style="color:var(--muted)">Punto Roosevelt → Majadas → San Cristóbal → Cliente mayorista</small></div><span class="status ok">Dentro de ruta</span></div><div id="routeMap" class="mapCanvas"></div></div><div class="card"><h3>Datos de ubicación</h3><div class="infoGrid"><div class="info"><span>Latitud</span><b id="lat">14.62080</b></div><div class="info"><span>Longitud</span><b id="lng">-90.54310</b></div><div class="info"><span>Precisión GPS</span><b>8 metros</b></div><div class="info"><span>Velocidad</span><b id="speed">18 km/h</b></div><div class="info"><span>Margen permitido</span><b>1.2 km</b></div><div class="info"><span>Última ubicación</span><b id="lastLocation">Punto Roosevelt</b></div></div><br><div class="notice">El mapa del demo usa coordenadas simuladas. En la app Android real, estas coordenadas llegan desde el GPS del teléfono corporativo.</div></div></div></section>
+
+        <section id="checkin" class="section">
+            <div class="layout">
+                <div class="card">
+                    <h3>Registrar visita</h3>
+                    <div class="field">
+                        <label>Cliente visitado</label>
+                        <select id="chkCliente">
+                            <option>Cliente Mayorista Centro</option>
+                            <option>Distribuidor Majadas Zona 11</option>
+                            <option>Sucursal Punto Roosevelt</option>
+                            <option>Cliente mayorista San Cristóbal</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Resultado</label>
+                        <select id="chkResultado">
+                            <option>Visita completada</option>
+                            <option>Cotización enviada</option>
+                            <option>Pedido generado</option>
+                            <option>Cliente no disponible</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Comentario</label>
+                        <textarea id="chkComentario">Cliente solicita cotización de bocinas activas y micrófonos inalámbricos.</textarea>
+                    </div>
+                    <button class="btn gold" onclick="hacerCheckIn()">Guardar check-in con GPS</button>
+                </div>
+                <div class="card">
+                    <h3>Últimos check-ins</h3>
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th>Hora</th>
+                            <th>Cliente</th>
+                            <th>Estado</th>
+                        </tr>
+                        </thead>
+                        <tbody id="checkRows">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="trafico" class="section"><div class="layout"><div class="card"><div class="cardhead"><h3>Tráfico de la ruta</h3><span class="status warn">Tráfico alto</span></div><div class="trafficBox"><div class="trafficItem"><div><b>Punto Roosevelt → Majadas</b><br><small>Tramo con congestión moderada</small></div><span class="status warn">+12 min</span></div><div class="trafficItem"><div><b>Majadas → San Cristóbal</b><br><small>Tráfico alto en salida a Mixco</small></div><span class="status bad">+27 min</span></div><div class="trafficItem"><div><b>San Cristóbal → Cliente mayorista</b><br><small>Flujo normal</small></div><span class="status ok">+3 min</span></div></div><br><div class="notice">Si hay tráfico, el retraso no se marca automáticamente como incumplimiento. Se compara la hora real contra el ETA con tráfico y una tolerancia definida por la empresa.</div></div><div class="card"><h3>Validación de retraso</h3><div class="infoGrid"><div class="info"><span>Plan original</span><b>1h 35m</b></div><div class="info"><span>Google ETA tráfico</span><b>2h 05m</b></div><div class="info"><span>Tiempo real</span><b>2h 12m</b></div><div class="info"><span>Resultado</span><b>Dentro de tolerancia</b></div></div><br><div class="progress"><i style="width:78%"></i></div><br><small style="color:var(--muted)">Demo: el retraso se considera justificado porque el ETA con tráfico explica la mayor parte del tiempo adicional.</small></div></div></section>
+
+        <section id="perfil" class="section"><div class="layout"><div class="card"><h3>Perfil corporativo</h3><div class="infoGrid"><div class="info"><span>Nombre</span><b>David Sac Patzan</b></div><div class="info"><span>Cargo</span><b>Asesor de Ventas</b></div><div class="info"><span>Sucursal</span><b>DoMiSol Punto Roosevelt</b></div><div class="info"><span>Supervisor</span><b>Antonio Barrios</b></div><div class="info"><span>Correo</span><b>dpatzan@domisol.com.gt</b></div><div class="info"><span>Tel. corporativo</span><b>44970444</b></div><div class="info"><span>Usuario</span><b>dpatzan</b></div><div class="info"><span>Teléfono tienda</span><b>23288314</b></div><div class="info"><span>Dirección tienda</span><b>Centro Comercial Punto Roosevelt, segundo nivel, locales 36, 73 y 74</b></div><div class="info"><span>IMEI demo</span><b>356874092704440</b></div><div class="info"><span>SIM</span><b>Tigo Corp. PR-044</b></div><div class="info"><span>Consentimiento</span><b>Firmado · 11/06/2026</b></div><div class="info"><span>Versión app</span><b>1.0.0 Demo</b></div></div></div><div class="card"><h3>Política visible</h3><div class="notice">Este dispositivo es propiedad de DoMiSol y se utiliza para actividades laborales. Durante la jornada, la ubicación del equipo puede ser monitoreada para control de rutas, seguridad operativa y cumplimiento comercial.</div><br><div class="infoGrid"><div class="info"><span>Puede pausar</span><b>No</b></div><div class="info"><span>Ruta editable</span><b>Antes de iniciar</b></div><div class="info"><span>Alertas</span><b>Activas</b></div><div class="info"><span>Reportes servidor</span><b>Cada 3 min</b></div></div></div></div></section>
+
+        <section id="alertas" class="section"><div class="card"><div class="cardhead"><h3>Alertas que puede generar el teléfono</h3><small>Eventos reportados al supervisor</small></div><table class="table"><thead><tr><th>Nivel</th><th>Evento</th><th>Cómo se valida</th><th>Estado</th></tr></thead><tbody><tr><td><span class="status ok">OK</span></td><td>Ubicación actualizada</td><td>GPS reportó correctamente</td><td>Resuelto</td></tr><tr><td><span class="status warn">Advertencia</span></td><td>Retraso por tráfico</td><td>ETA con tráfico + tolerancia</td><td>Monitoreo</td></tr><tr><td><span class="status bad">Crítica</span></td><td>GPS desactivado</td><td>Permiso / proveedor de ubicación</td><td>Regla activa</td></tr><tr><td><span class="status bad">Crítica</span></td><td>Fuera de ruta</td><td>Distancia al corredor permitido</td><td>Regla activa</td></tr><tr><td><span class="status bad">Crítica</span></td><td>Sin reporte &gt; 8 min</td><td>Heartbeat del servidor</td><td>Regla activa</td></tr></tbody></table></div></section>
+    </main>
+
+    <nav class="phoneNav nav" aria-label="Navegación principal">
+        <button class="active" data-section="inicio"><span>⌂</span><small>Jornada</small></button>
+        <button data-section="ruta"><span>＋</span><small>Ruta</small></button>
+        <button data-section="mapa"><span>⌖</span><small>Mapa</small></button>
+        <button data-section="checkin"><span>✓</span><small>Check-in</small></button>
+        <button type="button" id="moreBtn" onclick="toggleMoreMenu()"><span>•••</span><small>Más</small></button>
+    </nav>
+
+    <div id="moreMenu" class="moreMenu" onclick="if(event.target===this)closeMoreMenu()"><div class="moreSheet"><div class="moreHandle"></div><div class="moreTitle"><b>Más opciones</b><button onclick="closeMoreMenu()">×</button></div><div class="moreGrid nav"><button data-section="trafico"><span>▥</span><b>Tráfico</b><small>ETA y tolerancia</small></button><button data-section="perfil"><span>▤</span><b>Mi perfil</b><small>Datos corporativos</small></button><button data-section="alertas"><span>⚠</span><b>Alertas</b><small>Estado del equipo</small></button><a href="index.html"><span>⌂</span><b>Salir demo</b><small>Volver al menú</small></a></div></div></div>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
